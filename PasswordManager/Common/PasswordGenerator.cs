@@ -1,7 +1,7 @@
 using System;
 using System.Security.Cryptography;
 
-namespace PasswordManager
+namespace PasswordManager.Common
 {
     /// <summary>
     ///     The password generator allows the creation of cryptographically secure

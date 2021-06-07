@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using PasswordManager.Common;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -43,7 +44,7 @@ namespace PasswordManager.Tests
             var dict = new Dictionary<char, int>();
             
             using var passwordGenerator = new PasswordGenerator();
-            for (var i = 0; i < 50_000_000; i++) // 50 million passwords
+            for (var i = 0; i < 5_000_000; i++) // 5 million passwords
             {
                 var pass = passwordGenerator.GeneratePassword(80);
                 foreach (var c in pass.ToCharArray())
