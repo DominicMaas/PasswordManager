@@ -23,11 +23,11 @@ namespace PasswordManager.Common
             using var aes = new AesGcm(key);
 
             // Generate the nounce (maximum possible size)
-            var nounce = new byte[AesGcm.NonceByteSizes.MaxSize];
+            var nounce = new byte[Constants.NounceSize];
             _cryptoServiceProvider.GetBytes(nounce);
             
             var encryptedData = new byte[data.Length];
-            var tag = new byte[AesGcm.TagByteSizes.MaxSize]; // use large tag sizes!
+            var tag = new byte[Constants.TagSize]; // use large tag sizes!
             aes.Encrypt(nounce, data, encryptedData, tag);
 
             return new EncryptedData

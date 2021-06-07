@@ -28,8 +28,8 @@ namespace PasswordManager.Common
         /// <returns>The hashed password</returns>
         public HashedResult HashPassword(string password, int hashLength)
         {
-            // Generate a secure random 32 byte salt
-            var salt = new byte[32];
+            // Generate a secure random salt
+            var salt = new byte[Constants.SaltSize];
             _cryptoServiceProvider.GetBytes(salt);
             
             // C# / .NET Implementation of PBKDF2

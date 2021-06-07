@@ -1,10 +1,22 @@
+using System;
+using System.Security.Cryptography;
 using PasswordManager.Common;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace PasswordManager.Tests
 {
-    public class IntegrationTests
+    public class IntegrationTests : IDisposable
     {
+        private readonly ITestOutputHelper _outputHelper;
+        private readonly RNGCryptoServiceProvider _cryptoServiceProvider;
+
+        public IntegrationTests(ITestOutputHelper outputHelper)
+        {
+            _outputHelper = outputHelper;
+            _cryptoServiceProvider = new RNGCryptoServiceProvider();
+        }
+        
         [Fact]
         public void TestGenerateAndHash()
         {
@@ -24,7 +36,8 @@ namespace PasswordManager.Tests
             using var passwordHasher = new PasswordHasher();
             using var dataEncryptor = new DataEncryptor();
             
-            var data = new byte[] {0x00, 0x08, 0x00, 0x00, 0x08, 0x03, 0x08, 0x03, 0x08, 0x03};
+            var data = new byte[1_000_000];
+            _cryptoServiceProvider.GetBytes(data);
             
             var randomPassword = passwordGenerator.GeneratePassword(80);
             var key = passwordHasher.HashPassword(randomPassword, 256 / 8);
@@ -40,7 +53,8 @@ namespace PasswordManager.Tests
             using var passwordHasher = new PasswordHasher();
             using var dataEncryptor = new DataEncryptor();
             
-            var data = new byte[] {0x00, 0x08, 0x00, 0x00, 0x08, 0x03, 0x08, 0x03, 0x08, 0x03};
+            var data = new byte[1_000_000];
+            _cryptoServiceProvider.GetBytes(data);
             
             var randomPassword = passwordGenerator.GeneratePassword(80);
             var key = passwordHasher.HashPassword(randomPassword, 256 / 8);
@@ -62,6 +76,46 @@ namespace PasswordManager.Tests
                 new DataEncryptor.EncryptedData {Data = cipherText, Nounce = nounce, Tag = tag});
             
             Assert.Equal(data, plainText);
+        }
+        
+        [Fact]
+        public void TestGenerateAndHashAndEncryptAndPackAndUnpackAndDecrypt()
+        {
+            using var passwordGenerator = new PasswordGenerator();
+            using var passwordHasher = new PasswordHasher();
+            using var dataEncryptor = new DataEncryptor();
+            
+            var data = new byte[1_000_000];
+            _cryptoServiceProvider.GetBytes(data);
+            
+            var randomPassword = passwordGenerator.GeneratePassword(80);
+            var key = passwordHasher.HashPassword(randomPassword, 256 / 8);
+            var encryptedData = dataEncryptor.Encrypt(key.Hash, data);
+            
+            // ------ Stored to file ------ //
+            var packedData = DataPacker.PackData(key.Salt, encryptedData);
+
+            var (salt, unpackedData) =  DataPacker.UnpackData(packedData);
+            var cipherText = unpackedData.Data;
+            var nounce = unpackedData.Nounce;
+            var tag = unpackedData.Tag;
+            // ------ Stored to file ------ //
+            
+            var newKey = passwordHasher.HashPassword(randomPassword, salt, 256 / 8); // User re-enters password, use stored salt
+           
+            Assert.Equal(key.Hash, newKey.Hash);
+            Assert.Equal(key.Salt, newKey.Salt);
+
+            var plainText = dataEncryptor.Decrypt(newKey.Hash,
+                new DataEncryptor.EncryptedData {Data = cipherText, Nounce = nounce, Tag = tag});
+            
+            Assert.Equal(data, plainText);
+        }
+
+        public void Dispose()
+        {
+            _cryptoServiceProvider.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
 }
