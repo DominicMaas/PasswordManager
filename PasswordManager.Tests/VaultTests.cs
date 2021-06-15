@@ -1,3 +1,4 @@
+using System.IO;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -8,9 +9,16 @@ namespace PasswordManager.Tests
         [Fact]
         public async Task CreateVault()
         {
-            using var myVault = await Vault.CreateVaultAsync("vault_test.vault", "Pa$$w0rd");
-          //  myVault.CreatePassword("youtube", "Pa$$w0rd12345");
+            var myVault = await Vault.CreateVaultAsync("vault_test.vault", "Pa$$w0rd");
+            myVault.CreatePassword("youtube", "Pa$$w0rd12345");
+            await myVault.SaveVaultAsync();
+
+            // ----- Barrier ----- //
+            
+            using var existingVault = await Vault.OpenVaultAsync("vault_test.vault", "Pa$$w0rd");
+            var storedPassword = existingVault.GetPassword("youtube");
+            
+            Assert.Equal("Pa$$w0rd12345", storedPassword);
         }
-        
     }
 }

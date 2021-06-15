@@ -101,6 +101,7 @@ namespace PasswordManager
         /// <returns></returns>
         public IEnumerable<string> ListPasswordEntries()
         {
+            AssertValid();
             return new List<string>();
         }
 
@@ -110,33 +111,52 @@ namespace PasswordManager
         /// </summary>
         /// <param name="key">The key to store the password under</param>
         /// <param name="randomPasswordLength">The length to make this password</param>
-        public void CreatePassword(string key, int randomPasswordLength)
+        public void CreateRandomPassword(string key, int randomPasswordLength)
         {
-            
+            AssertValid();
         }
+
+        public void CreatePassword(string key, string password)
+        {
+            AssertValid();
+            
+            _vaultInternal!.Passwords.Add(key, password);
+        }
+        
 
         public string GetPassword(string key)
         {
-            return "";
+            AssertValid();
+            
+            var result = _vaultInternal!.Passwords.TryGetValue(key, out var password);
+            if (!result || string.IsNullOrEmpty(password)) 
+                throw new Exception("This password does not exist");
+
+            return password;
         }
 
-        private async Task SaveVaultAsync()
+        public async Task SaveVaultAsync()
+        {
+            AssertValid();
+            
+            // Encrypt the internal vault using the provided key hash
+            var encryptedData = _dataEncryptor.Encrypt(_key!.Value.Hash, _vaultInternal!.Serialize());
+            
+            // Now pack the encrypted data, alongside the salt so it can be saved to disk
+            var packedData = DataPacker.PackData(_key.Value.Salt, encryptedData);
+
+            // Now write to file
+            await using var stream = File.Open(_filePath, FileMode.Create, FileAccess.Write);
+            await stream.WriteAsync(packedData);
+        }
+
+        private void AssertValid()
         {
             if (_vaultInternal == null)
                 throw new ArgumentNullException(nameof(_vaultInternal), "The internal vault cannot be null!");
 
             if (_key == null)
                 throw new ArgumentNullException(nameof(_key), "The internal key cannot be null!");
-            
-            // Encrypt the internal vault using the provided key hash
-            var encryptedData = _dataEncryptor.Encrypt(_key.Value.Hash, _vaultInternal.Serialize());
-            
-            // Now pack the encrypted data, alongside the salt so it can be saved to disk
-            var packedData = DataPacker.PackData(_key.Value.Salt, encryptedData);
-
-            // Now write to file
-            await using var stream = File.OpenWrite(_filePath);
-            await stream.WriteAsync(packedData);
         }
         
         public void Dispose()
