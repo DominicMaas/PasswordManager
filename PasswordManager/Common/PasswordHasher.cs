@@ -14,9 +14,9 @@ namespace PasswordManager.Common
         /// <summary>
         ///     Create a new instance of 'PasswordHasher'
         /// </summary>
-        public PasswordHasher()
+        public PasswordHasher(RNGCryptoServiceProvider? cryptoServiceProvider = null)
         {
-            _cryptoServiceProvider = new RNGCryptoServiceProvider();
+            _cryptoServiceProvider = cryptoServiceProvider ?? new RNGCryptoServiceProvider();
         }
         
         /// <summary>

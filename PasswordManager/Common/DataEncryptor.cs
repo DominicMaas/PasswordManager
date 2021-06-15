@@ -11,9 +11,9 @@ namespace PasswordManager.Common
         /// <summary>
         ///     Create a new instance of 'DataEncryptor'
         /// </summary>
-        public DataEncryptor()
+        public DataEncryptor(RNGCryptoServiceProvider? cryptoServiceProvider = null)
         {
-            _cryptoServiceProvider = new RNGCryptoServiceProvider();
+            _cryptoServiceProvider = cryptoServiceProvider ?? new RNGCryptoServiceProvider();
         }
         
         public EncryptedData Encrypt(byte[] key, byte[] data)

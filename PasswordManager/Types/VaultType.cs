@@ -12,6 +12,6 @@ namespace PasswordManager.Types
         public Dictionary<string, string> Passwords { get; set; }
 
         public byte[] Serialize() => JsonSerializer.SerializeToUtf8Bytes(this);
-        public static VaultType Deserialize(byte[] data) => JsonSerializer.Deserialize<VaultType>(data);
+        public static VaultType? Deserialize(byte[] data) => JsonSerializer.Deserialize<VaultType>(data);
     }
 }

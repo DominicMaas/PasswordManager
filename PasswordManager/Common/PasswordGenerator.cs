@@ -18,9 +18,9 @@ namespace PasswordManager.Common
         /// <summary>
         ///     Create a new instance of 'PasswordGenerator'
         /// </summary>
-        public PasswordGenerator()
+        public PasswordGenerator(RNGCryptoServiceProvider? cryptoServiceProvider = null)
         {
-            _cryptoServiceProvider = new RNGCryptoServiceProvider();
+            _cryptoServiceProvider = cryptoServiceProvider ?? new RNGCryptoServiceProvider();
         }
 
         public string GeneratePassword(int length)
