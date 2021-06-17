@@ -9,7 +9,7 @@ namespace PasswordManager.Types
     /// </summary>
     public class VaultType
     {
-        public Dictionary<string, string> Passwords { get; set; }
+        public Dictionary<string, string> Passwords { get; set; } = new();
 
         public byte[] Serialize() => JsonSerializer.SerializeToUtf8Bytes(this);
 

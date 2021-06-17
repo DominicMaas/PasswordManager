@@ -77,7 +77,7 @@ namespace PasswordManager
         private bool GenerateRandomPasswordState()
         {
             WriteHeader();
-            var userInput = AskUserForInput("How many characters would you like your random password to be?");
+            var userInput = AskUserForInput("How many characters would you like your random password to be (8-80)?");
 
             // Make sure the user actually entered a valid number / anything
             if (string.IsNullOrEmpty(userInput) || !int.TryParse(userInput, out var passwordLength))
