@@ -1,10 +1,10 @@
+using PasswordManager.Common;
+using PasswordManager.Types;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
-using PasswordManager.Common;
-using PasswordManager.Types;
 
 namespace PasswordManager
 {
@@ -12,10 +12,11 @@ namespace PasswordManager
     {
         // Cryptographically secure services
         private readonly RNGCryptoServiceProvider _cryptoServiceProvider;
+
         private readonly PasswordGenerator _passwordGenerator;
         private readonly PasswordHasher _passwordHasher;
         private readonly DataEncryptor _dataEncryptor;
-        
+
         // The internal vault
         private VaultType? _vaultInternal;
 
@@ -23,7 +24,7 @@ namespace PasswordManager
 
         // Where the vault is located
         private readonly string _filePath;
-        
+
         /// <summary>
         ///     Creates a new vault at the specified file location. Encrypts the vault
         ///     with the provided password.
@@ -44,7 +45,7 @@ namespace PasswordManager
             await vault.OpenVaultInternalAsync(password);
             return vault;
         }
-        
+
         private Vault(string filePath)
         {
             // Use the same RNG Crypto service provider for all modules
@@ -52,10 +53,10 @@ namespace PasswordManager
             _passwordGenerator = new PasswordGenerator(_cryptoServiceProvider);
             _passwordHasher = new PasswordHasher(_cryptoServiceProvider);
             _dataEncryptor = new DataEncryptor(_cryptoServiceProvider);
-            
+
             _filePath = filePath;
         }
-        
+
         /// <summary>
         ///     Internally, creating a vault create a new internal vault object, saves it,
         ///     and then opens it again.
@@ -68,7 +69,7 @@ namespace PasswordManager
 
             // Hash the provided password and store is so vault saving works
             _key = _passwordHasher.HashPassword(password, Constants.KeySize);
-            
+
             // Attempt to save this vault (this also ensures the file location is correct)
             await SaveVaultAsync();
 
@@ -84,7 +85,7 @@ namespace PasswordManager
 
             // Hash the provided password with the vault salt
             _key = _passwordHasher.HashPassword(password, salt, Constants.KeySize);
-            
+
             // Using this key, attempt to decrypt the vault
             var decryptedData = _dataEncryptor.Decrypt(_key.Value.Hash, rawData);
 
@@ -93,7 +94,7 @@ namespace PasswordManager
             if (_vaultInternal == null)
                 throw new Exception("Vault was null after deserialize");
         }
-        
+
         /// <summary>
         ///     Returns a list of password entries (the unique key of a password), this key
         ///     can then be used to retrieve a specifid password
@@ -119,17 +120,16 @@ namespace PasswordManager
         public void CreatePassword(string key, string password)
         {
             AssertValid();
-            
+
             _vaultInternal!.Passwords.Add(key, password);
         }
-        
 
         public string GetPassword(string key)
         {
             AssertValid();
-            
+
             var result = _vaultInternal!.Passwords.TryGetValue(key, out var password);
-            if (!result || string.IsNullOrEmpty(password)) 
+            if (!result || string.IsNullOrEmpty(password))
                 throw new Exception("This password does not exist");
 
             return password;
@@ -138,10 +138,10 @@ namespace PasswordManager
         public async Task SaveVaultAsync()
         {
             AssertValid();
-            
+
             // Encrypt the internal vault using the provided key hash
             var encryptedData = _dataEncryptor.Encrypt(_key!.Value.Hash, _vaultInternal!.Serialize());
-            
+
             // Now pack the encrypted data, alongside the salt so it can be saved to disk
             var packedData = DataPacker.PackData(_key.Value.Salt, encryptedData);
 
@@ -158,12 +158,12 @@ namespace PasswordManager
             if (_key == null)
                 throw new ArgumentNullException(nameof(_key), "The internal key cannot be null!");
         }
-        
+
         public void Dispose()
         {
             _vaultInternal = null;
             _key = null;
-            
+
             _dataEncryptor.Dispose();
             _passwordHasher.Dispose();
             _passwordGenerator.Dispose();

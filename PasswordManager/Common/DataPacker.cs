@@ -12,7 +12,7 @@ namespace PasswordManager.Common
             // Guard lengths
             if (salt.Length != Constants.SaltSize)
                 throw new ArgumentException("Salt is expected to be 'Constants.SaltSize' in length", nameof(salt));
-            
+
             if (data.Nounce.Length != Constants.NounceSize)
                 throw new ArgumentException("Nounce is expected to be 'Constants.NounceSize' in length", nameof(data.Nounce));
 
@@ -22,9 +22,9 @@ namespace PasswordManager.Common
             var cipherTextLength = data.Data.Length;
             var dataLength = cipherTextLength + Constants.FixedPackedSize;
             var encryptedData = new byte[dataLength].AsSpan();
-            
+
             data.Data.CopyTo(encryptedData[Constants.GetCipherTextRange(cipherTextLength)]);
-           
+
             salt.CopyTo(encryptedData[Constants.GetSaltRange(cipherTextLength)]);
             data.Nounce.CopyTo(encryptedData[Constants.GetNounceRange(cipherTextLength)]);
             data.Tag.CopyTo(encryptedData[Constants.GetTagRange(cipherTextLength)]);
@@ -35,7 +35,7 @@ namespace PasswordManager.Common
         public static (byte[] salt, DataEncryptor.EncryptedData data) UnpackData(byte[] input)
         {
             var cipherTextLength = input.Length - Constants.FixedPackedSize;
-            
+
             // The input data
             var inputSpan = input.AsSpan();
 
@@ -44,7 +44,7 @@ namespace PasswordManager.Common
             var salt = new byte[Constants.SaltSize];
             var nounce = new byte[Constants.NounceSize];
             var tag = new byte[Constants.TagSize];
-            
+
             inputSpan[Constants.GetCipherTextRange(cipherTextLength)].CopyTo(cipherText);
             inputSpan[Constants.GetSaltRange(cipherTextLength)].CopyTo(salt);
             inputSpan[Constants.GetNounceRange(cipherTextLength)].CopyTo(nounce);

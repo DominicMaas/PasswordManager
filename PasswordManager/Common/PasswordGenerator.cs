@@ -28,16 +28,16 @@ namespace PasswordManager.Common
             // Guards
             if (length < 8) throw new ArgumentException("Password length must be at least 8 characters long", nameof(length));
             if (length > 80) throw new ArgumentException("Password length must be less than or equal to 80 characters long", nameof(length));
-            
+
             // Converting to a char array for easy access
             var potentialPasswordChars = ValidPasswordCharacters.ToCharArray();
-            
+
             var generatedResult = new char[length];
-            
+
             var bytes = new byte[length * 8];
             _cryptoServiceProvider.GetBytes(bytes);
-            
-            // There is a small bias due to the modulus operation not spreading the entire width of ulong equally into {NUMBER} chars. 
+
+            // There is a small bias due to the modulus operation not spreading the entire width of ulong equally into {NUMBER} chars.
             for (var i = 0; i < length; i++)
             {
                 var value = BitConverter.ToUInt64(bytes, i * 8);
@@ -46,9 +46,9 @@ namespace PasswordManager.Common
 
             return new string(generatedResult);
         }
-        
+
         /// <summary>
-        ///     Dispose resources 
+        ///     Dispose resources
         /// </summary>
         public void Dispose()
         {

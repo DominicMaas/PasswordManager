@@ -1,4 +1,3 @@
-using System.IO;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -14,10 +13,10 @@ namespace PasswordManager.Tests
             await myVault.SaveVaultAsync();
 
             // ----- Barrier ----- //
-            
+
             using var existingVault = await Vault.OpenVaultAsync("vault_test.vault", "Pa$$w0rd");
             var storedPassword = existingVault.GetPassword("youtube");
-            
+
             Assert.Equal("Pa$$w0rd12345", storedPassword);
         }
     }

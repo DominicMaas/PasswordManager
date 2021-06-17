@@ -1,6 +1,6 @@
+using PasswordManager.Common;
 using System;
 using System.Security.Cryptography;
-using PasswordManager.Common;
 using Xunit;
 
 namespace PasswordManager.Tests
@@ -9,7 +9,7 @@ namespace PasswordManager.Tests
     {
         // Cryptographically secure random number generation
         private readonly RNGCryptoServiceProvider _cryptoServiceProvider;
-        
+
         public DataPackerTests()
         {
             _cryptoServiceProvider = new RNGCryptoServiceProvider();
@@ -23,7 +23,7 @@ namespace PasswordManager.Tests
             var salt = new byte[Constants.SaltSize];
             var nonce = new byte[Constants.NounceSize];
             var tag = new byte[Constants.TagSize];
-            
+
             _cryptoServiceProvider.GetBytes(cipherText);
             _cryptoServiceProvider.GetBytes(salt);
             _cryptoServiceProvider.GetBytes(nonce);
@@ -31,14 +31,14 @@ namespace PasswordManager.Tests
 
             var result = DataPacker.PackData(salt, new DataEncryptor.EncryptedData
             {
-                Data = cipherText, 
-                Nounce = nonce, 
+                Data = cipherText,
+                Nounce = nonce,
                 Tag = tag
             });
-            
+
             Assert.Equal(512 + Constants.FixedPackedSize, result.Length);
         }
-        
+
         [Fact]
         public void TestPackAndUnpack()
         {
@@ -47,7 +47,7 @@ namespace PasswordManager.Tests
             var salt = new byte[Constants.SaltSize];
             var nonce = new byte[Constants.NounceSize];
             var tag = new byte[Constants.TagSize];
-            
+
             _cryptoServiceProvider.GetBytes(cipherText);
             _cryptoServiceProvider.GetBytes(salt);
             _cryptoServiceProvider.GetBytes(nonce);
@@ -55,20 +55,20 @@ namespace PasswordManager.Tests
 
             var result = DataPacker.PackData(salt, new DataEncryptor.EncryptedData
             {
-                Data = cipherText, 
-                Nounce = nonce, 
+                Data = cipherText,
+                Nounce = nonce,
                 Tag = tag
             });
-            
+
             Assert.Equal(512 + Constants.FixedPackedSize, result.Length);
 
             var (unpackedSalt, unpackedData) = DataPacker.UnpackData(result);
-            
+
             Assert.Equal(Constants.SaltSize, unpackedSalt.Length);
             Assert.Equal(512, unpackedData.Data.Length);
             Assert.Equal(Constants.NounceSize, unpackedData.Nounce.Length);
             Assert.Equal(Constants.TagSize, unpackedData.Tag.Length);
-            
+
             Assert.Equal(salt, unpackedSalt);
             Assert.Equal(cipherText, unpackedData.Data);
             Assert.Equal(nonce, unpackedData.Nounce);

@@ -1,7 +1,7 @@
+using PasswordManager.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using PasswordManager.Common;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -22,7 +22,7 @@ namespace PasswordManager.Tests
             using var passwordGenerator = new PasswordGenerator();
             Assert.Throws<ArgumentException>(() => passwordGenerator.GeneratePassword(5));
         }
-        
+
         [Fact]
         public void LengthTooLong()
         {
@@ -36,13 +36,13 @@ namespace PasswordManager.Tests
             using var passwordGenerator = new PasswordGenerator();
             passwordGenerator.GeneratePassword(80);
         }
-        
+
         [Fact]
         public void MassGeneration()
         {
             // Keep track of counts to see distribution
             var dict = new Dictionary<char, int>();
-            
+
             using var passwordGenerator = new PasswordGenerator();
             for (var i = 0; i < 5_000_000; i++) // 5 million passwords
             {

@@ -10,7 +10,7 @@ namespace PasswordManager.Common
     {
         // Cryptographically secure random number generation
         private readonly RNGCryptoServiceProvider _cryptoServiceProvider;
-        
+
         /// <summary>
         ///     Create a new instance of 'PasswordHasher'
         /// </summary>
@@ -18,7 +18,7 @@ namespace PasswordManager.Common
         {
             _cryptoServiceProvider = cryptoServiceProvider ?? new RNGCryptoServiceProvider();
         }
-        
+
         /// <summary>
         ///     Generate a hash for the provided password using a 32-byte random salt
         ///     alongside PBKDF2-HMAC-SHA512 with 200,000 iterations.
@@ -31,7 +31,7 @@ namespace PasswordManager.Common
             // Generate a secure random salt
             var salt = new byte[Constants.SaltSize];
             _cryptoServiceProvider.GetBytes(salt);
-            
+
             // C# / .NET Implementation of PBKDF2
             using var pbkdf2 = new Rfc2898DeriveBytes(password, salt, 200_000, HashAlgorithmName.SHA512);
             return new HashedResult
@@ -40,7 +40,7 @@ namespace PasswordManager.Common
                 Hash = pbkdf2.GetBytes(hashLength)
             };
         }
-        
+
         /// <summary>
         ///     Generate a hash for the provided password using a provided salt
         ///     alongside PBKDF2-HMAC-SHA512 with 200,000 iterations.
@@ -59,9 +59,9 @@ namespace PasswordManager.Common
                 Hash = pbkdf2.GetBytes(hashLength)
             };
         }
-        
+
         /// <summary>
-        ///     Dispose resources 
+        ///     Dispose resources
         /// </summary>
         public void Dispose()
         {

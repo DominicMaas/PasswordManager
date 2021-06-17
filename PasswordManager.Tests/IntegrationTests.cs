@@ -1,9 +1,8 @@
+using PasswordManager.Common;
+using PasswordManager.Types;
 using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
-using System.Text.Json;
-using PasswordManager.Common;
-using PasswordManager.Types;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -19,7 +18,7 @@ namespace PasswordManager.Tests
             _outputHelper = outputHelper;
             _cryptoServiceProvider = new RNGCryptoServiceProvider();
         }
-        
+
         [Fact]
         public void TestGenerateAndHash()
         {
@@ -38,80 +37,80 @@ namespace PasswordManager.Tests
             using var passwordGenerator = new PasswordGenerator();
             using var passwordHasher = new PasswordHasher();
             using var dataEncryptor = new DataEncryptor();
-            
+
             var data = new byte[1_000_000];
             _cryptoServiceProvider.GetBytes(data);
-            
+
             var randomPassword = passwordGenerator.GeneratePassword(80);
             var key = passwordHasher.HashPassword(randomPassword, 256 / 8);
             var encryptedData = dataEncryptor.Encrypt(key.Hash, data);
-            
+
             Assert.NotEqual(data, encryptedData.Data);
         }
-        
+
         [Fact]
         public void TestGenerateAndHashAndEncryptAndDecrypt()
         {
             using var passwordGenerator = new PasswordGenerator();
             using var passwordHasher = new PasswordHasher();
             using var dataEncryptor = new DataEncryptor();
-            
+
             var data = new byte[1_000_000];
             _cryptoServiceProvider.GetBytes(data);
-            
+
             var randomPassword = passwordGenerator.GeneratePassword(80);
             var key = passwordHasher.HashPassword(randomPassword, 256 / 8);
             var encryptedData = dataEncryptor.Encrypt(key.Hash, data);
-            
+
             // ------ Stored to file ------ //
             var cipherText = encryptedData.Data;
             var salt = key.Salt;
             var nounce = encryptedData.Nounce;
             var tag = encryptedData.Tag;
             // ------ Stored to file ------ //
-            
+
             var newKey = passwordHasher.HashPassword(randomPassword, salt, 256 / 8); // User re-enters password, use stored salt
-           
+
             Assert.Equal(key.Hash, newKey.Hash);
             Assert.Equal(key.Salt, newKey.Salt);
 
             var plainText = dataEncryptor.Decrypt(newKey.Hash,
-                new DataEncryptor.EncryptedData {Data = cipherText, Nounce = nounce, Tag = tag});
-            
+                new DataEncryptor.EncryptedData { Data = cipherText, Nounce = nounce, Tag = tag });
+
             Assert.Equal(data, plainText);
         }
-        
+
         [Fact]
         public void TestGenerateAndHashAndEncryptAndPackAndUnpackAndDecrypt()
         {
             using var passwordGenerator = new PasswordGenerator();
             using var passwordHasher = new PasswordHasher();
             using var dataEncryptor = new DataEncryptor();
-            
+
             var data = new byte[1_000_000];
             _cryptoServiceProvider.GetBytes(data);
-            
+
             var randomPassword = passwordGenerator.GeneratePassword(80);
             var key = passwordHasher.HashPassword(randomPassword, 256 / 8);
             var encryptedData = dataEncryptor.Encrypt(key.Hash, data);
-            
+
             // ------ Stored to file ------ //
             var packedData = DataPacker.PackData(key.Salt, encryptedData);
 
-            var (salt, unpackedData) =  DataPacker.UnpackData(packedData);
+            var (salt, unpackedData) = DataPacker.UnpackData(packedData);
             var cipherText = unpackedData.Data;
             var nounce = unpackedData.Nounce;
             var tag = unpackedData.Tag;
             // ------ Stored to file ------ //
-            
+
             var newKey = passwordHasher.HashPassword(randomPassword, salt, 256 / 8); // User re-enters password, use stored salt
-           
+
             Assert.Equal(key.Hash, newKey.Hash);
             Assert.Equal(key.Salt, newKey.Salt);
 
             var plainText = dataEncryptor.Decrypt(newKey.Hash,
-                new DataEncryptor.EncryptedData {Data = cipherText, Nounce = nounce, Tag = tag});
-            
+                new DataEncryptor.EncryptedData { Data = cipherText, Nounce = nounce, Tag = tag });
+
             Assert.Equal(data, plainText);
         }
 
@@ -123,10 +122,10 @@ namespace PasswordManager.Tests
 
             var bytes = vault.Serialize();
             var vaultFromJson = VaultType.Deserialize(bytes);
-            
+
             Assert.Equal(vault.Passwords["demo-password"], vaultFromJson.Passwords["demo-password"]);
         }
-        
+
         [Fact]
         public void TestGenerateAndHashAndSerializeAndEncryptAndPackAndUnpackAndDecryptAndDeserialize()
         {
@@ -139,27 +138,27 @@ namespace PasswordManager.Tests
             vault.Passwords.Add("website_2", passwordGenerator.GeneratePassword(80));
             vault.Passwords.Add("website_3", passwordGenerator.GeneratePassword(80));
             vault.Passwords.Add("website_4", passwordGenerator.GeneratePassword(80));
-            
+
             var randomPassword = passwordGenerator.GeneratePassword(80);
             var key = passwordHasher.HashPassword(randomPassword, 256 / 8);
             var encryptedData = dataEncryptor.Encrypt(key.Hash, vault.Serialize());
-            
+
             // ------ Stored to file ------ //
             var packedData = DataPacker.PackData(key.Salt, encryptedData);
 
-            var (salt, unpackedData) =  DataPacker.UnpackData(packedData);
+            var (salt, unpackedData) = DataPacker.UnpackData(packedData);
             var cipherText = unpackedData.Data;
             var nounce = unpackedData.Nounce;
             var tag = unpackedData.Tag;
             // ------ Stored to file ------ //
-            
+
             var newKey = passwordHasher.HashPassword(randomPassword, salt, 256 / 8); // User re-enters password, use stored salt
-           
+
             Assert.Equal(key.Hash, newKey.Hash);
             Assert.Equal(key.Salt, newKey.Salt);
 
             var plainText = dataEncryptor.Decrypt(newKey.Hash,
-                new DataEncryptor.EncryptedData {Data = cipherText, Nounce = nounce, Tag = tag});
+                new DataEncryptor.EncryptedData { Data = cipherText, Nounce = nounce, Tag = tag });
 
             var storedVault = VaultType.Deserialize(plainText);
             Assert.NotNull(storedVault);
@@ -169,7 +168,7 @@ namespace PasswordManager.Tests
                 Assert.Equal(pass, storedVault.Passwords[id]);
             }
         }
-        
+
         public void Dispose()
         {
             _cryptoServiceProvider.Dispose();

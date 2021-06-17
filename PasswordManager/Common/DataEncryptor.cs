@@ -7,7 +7,7 @@ namespace PasswordManager.Common
     {
         // Cryptographically secure random number generation
         private readonly RNGCryptoServiceProvider _cryptoServiceProvider;
-        
+
         /// <summary>
         ///     Create a new instance of 'DataEncryptor'
         /// </summary>
@@ -15,17 +15,17 @@ namespace PasswordManager.Common
         {
             _cryptoServiceProvider = cryptoServiceProvider ?? new RNGCryptoServiceProvider();
         }
-        
+
         public EncryptedData Encrypt(byte[] key, byte[] data)
         {
-            // Use AES in GCM mode as per 
+            // Use AES in GCM mode as per
             // https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html#cipher-modes
             using var aes = new AesGcm(key);
 
             // Generate the nounce (maximum possible size)
             var nounce = new byte[Constants.NounceSize];
             _cryptoServiceProvider.GetBytes(nounce);
-            
+
             var encryptedData = new byte[data.Length];
             var tag = new byte[Constants.TagSize]; // use large tag sizes!
             aes.Encrypt(nounce, data, encryptedData, tag);
@@ -40,7 +40,7 @@ namespace PasswordManager.Common
 
         public byte[] Decrypt(byte[] key, EncryptedData data)
         {
-            // Use AES in GCM mode as per 
+            // Use AES in GCM mode as per
             // https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html#cipher-modes
             using var aes = new AesGcm(key);
 
@@ -49,13 +49,13 @@ namespace PasswordManager.Common
 
             return plainText;
         }
-        
+
         public void Dispose()
         {
             _cryptoServiceProvider.Dispose();
             GC.SuppressFinalize(this);
         }
-        
+
         public struct EncryptedData
         {
             public byte[] Data;
