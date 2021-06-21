@@ -106,7 +106,7 @@ namespace PasswordManager
         {
             AssertValid();
 
-            return _vaultInternal!.Passwords.Select(x => x.Key);
+            return _vaultInternal!.Passwords.Select(x => x.Key).ToList();
         }
 
         /// <summary>
@@ -119,27 +119,43 @@ namespace PasswordManager
         {
             AssertValid();
 
-            if (string.IsNullOrEmpty(identifier))
-                throw new VaultException(VaultExceptionReason.InvalidIdentifier);
+            AssertIndentifierValid(identifier);
 
-            var randomPassword = _passwordGenerator.GeneratePassword(randomPasswordLength);
+            string randomPassword;
+
+            try
+            {
+                randomPassword = _passwordGenerator.GeneratePassword(randomPasswordLength);
+            }
+            catch (ArgumentException)
+            {
+                throw new VaultException(VaultExceptionReason.InvalidPassword);
+            }
+
             CreatePassword(identifier, randomPassword);
         }
 
         public void CreatePassword(string identifier, string password)
         {
             AssertValid();
-
-            if (string.IsNullOrEmpty(identifier))
-                throw new VaultException(VaultExceptionReason.InvalidIdentifier);
-
-            if (string.IsNullOrEmpty(password))
-                throw new VaultException(VaultExceptionReason.InvalidPassword);
+            AssertIndentifierValid(identifier);
+            AssertPasswordValid(password);
 
             if (_vaultInternal!.Passwords.ContainsKey(identifier))
                 throw new VaultException(VaultExceptionReason.IdentifierAlreadyExists);
 
             _vaultInternal!.Passwords.Add(identifier, password);
+        }
+
+        public void DeletePassword(string identifier)
+        {
+            AssertValid();
+            AssertIndentifierValid(identifier);
+
+            if (!_vaultInternal!.Passwords.ContainsKey(identifier))
+                throw new VaultException(VaultExceptionReason.IdentifierNotExist);
+
+            _vaultInternal!.Passwords.Remove(identifier);
         }
 
         /// <summary>
@@ -152,9 +168,7 @@ namespace PasswordManager
         public string GetPassword(string identifier)
         {
             AssertValid();
-
-            if (string.IsNullOrEmpty(identifier))
-                throw new VaultException(VaultExceptionReason.InvalidIdentifier);
+            AssertIndentifierValid(identifier);
 
             var result = _vaultInternal!.Passwords.TryGetValue(identifier, out var password);
             if (!result || string.IsNullOrEmpty(password))
@@ -193,6 +207,24 @@ namespace PasswordManager
 
             if (_key == null)
                 throw new VaultException(VaultExceptionReason.MissingKey);
+        }
+
+        private void AssertIndentifierValid(string identifier)
+        {
+            if (string.IsNullOrEmpty(identifier))
+                throw new VaultException(VaultExceptionReason.InvalidIdentifier);
+
+            if (identifier.Length > 255)
+                throw new VaultException(VaultExceptionReason.InvalidIdentifier);
+        }
+
+        private void AssertPasswordValid(string password)
+        {
+            if (string.IsNullOrEmpty(password))
+                throw new VaultException(VaultExceptionReason.InvalidPassword);
+
+            if (password.Length < PasswordGenerator.MinimumPossiblePasswordLength || password.Length > PasswordGenerator.MaximumPossiblePasswordLength)
+                throw new VaultException(VaultExceptionReason.InvalidPassword);
         }
 
         public void Dispose()

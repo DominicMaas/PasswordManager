@@ -15,6 +15,9 @@ namespace PasswordManager.Common
         // These are valid characters that may be used in the password
         private const string ValidPasswordCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()-_+=[]{};':<>?,./|\"\\~`";
 
+        public const int MinimumPossiblePasswordLength = 8;
+        public const int MaximumPossiblePasswordLength = 80;
+
         /// <summary>
         ///     Create a new instance of 'PasswordGenerator'
         /// </summary>
@@ -26,8 +29,8 @@ namespace PasswordManager.Common
         public string GeneratePassword(int length)
         {
             // Guards
-            if (length < 8) throw new ArgumentException("Password length must be at least 8 characters long", nameof(length));
-            if (length > 80) throw new ArgumentException("Password length must be less than or equal to 80 characters long", nameof(length));
+            if (length < MinimumPossiblePasswordLength) throw new ArgumentException($"Password length must be at least {MinimumPossiblePasswordLength} characters long", nameof(length));
+            if (length > MaximumPossiblePasswordLength) throw new ArgumentException($"Password length must be less than or equal to {MaximumPossiblePasswordLength} characters long", nameof(length));
 
             // Converting to a char array for easy access
             var potentialPasswordChars = ValidPasswordCharacters.ToCharArray();
