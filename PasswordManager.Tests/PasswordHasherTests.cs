@@ -1,18 +1,10 @@
 using PasswordManager.Common;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace PasswordManager.Tests
 {
     public class PasswordHasherTests
     {
-        private readonly ITestOutputHelper _outputHelper;
-
-        public PasswordHasherTests(ITestOutputHelper outputHelper)
-        {
-            _outputHelper = outputHelper;
-        }
-
         [Fact]
         public void GenerateHash()
         {

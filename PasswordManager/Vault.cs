@@ -3,6 +3,7 @@ using PasswordManager.Types;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 
@@ -19,7 +20,8 @@ namespace PasswordManager
 
         // The internal vault
         private VaultType? _vaultInternal;
-
+        
+        // The key (hash) and salt and used to encrypt and decrypt the vault
         private PasswordHasher.HashedResult? _key;
 
         // Where the vault is located
@@ -67,7 +69,7 @@ namespace PasswordManager
             // Create a new empty vault
             _vaultInternal = new VaultType { Passwords = new Dictionary<string, string>() };
 
-            // Hash the provided password and store is so vault saving works
+            // Hash the provided password and store it so vault saving works
             _key = _passwordHasher.HashPassword(password, Constants.KeySize);
 
             // Attempt to save this vault (this also ensures the file location is correct)
@@ -100,46 +102,76 @@ namespace PasswordManager
         ///     can then be used to retrieve a specifid password
         /// </summary>
         /// <returns></returns>
-        public IEnumerable<string> ListPasswordEntries()
+        public IEnumerable<string> GetPasswordEntries()
         {
             AssertValid();
-            return new List<string>();
+
+            return _vaultInternal!.Passwords.Select(x => x.Key);
         }
 
         /// <summary>
         ///     Create a new password entry with the specified key and
         ///     random password length.
         /// </summary>
-        /// <param name="key">The key to store the password under</param>
+        /// <param name="identifier">The identifier to store the password under</param>
         /// <param name="randomPasswordLength">The length to make this password</param>
-        public void CreateRandomPassword(string key, int randomPasswordLength)
+        public void CreateRandomPassword(string identifier, int randomPasswordLength)
         {
             AssertValid();
+            
+            if (string.IsNullOrEmpty(identifier))
+                throw new VaultException(VaultExceptionReason.InvalidIdentifier);
+
+            var randomPassword = _passwordGenerator.GeneratePassword(randomPasswordLength);
+            CreatePassword(identifier, randomPassword);
         }
 
-        public void CreatePassword(string key, string password)
+        public void CreatePassword(string identifier, string password)
         {
             AssertValid();
 
-            _vaultInternal!.Passwords.Add(key, password);
+            if (string.IsNullOrEmpty(identifier))
+                throw new VaultException(VaultExceptionReason.InvalidIdentifier);
+            
+            if (string.IsNullOrEmpty(password))
+                throw new VaultException(VaultExceptionReason.InvalidPassword);
+
+            if (_vaultInternal!.Passwords.ContainsKey(identifier))
+                throw new VaultException(VaultExceptionReason.IdentifierAlreadyExists);
+            
+            _vaultInternal!.Passwords.Add(identifier, password);
         }
 
-        public string GetPassword(string key)
+        /// <summary>
+        ///     Get a password that is stored in the vault. Throws an exception if
+        ///     the password cannot be found.
+        /// </summary>
+        /// <param name="identifier">An identifier for the password</param>
+        /// <returns>The password for the supplied identifier</returns>
+        /// <exception cref="VaultException">The identifier does not exist or is invalid</exception>
+        public string GetPassword(string identifier)
         {
             AssertValid();
+            
+            if (string.IsNullOrEmpty(identifier))
+                throw new VaultException(VaultExceptionReason.InvalidIdentifier);
 
-            var result = _vaultInternal!.Passwords.TryGetValue(key, out var password);
+            var result = _vaultInternal!.Passwords.TryGetValue(identifier, out var password);
             if (!result || string.IsNullOrEmpty(password))
-                throw new Exception("This password does not exist");
+                throw new VaultException(VaultExceptionReason.IdentifierNotExist);
 
             return password;
         }
 
+        /// <summary>
+        ///     Save the vault to file
+        /// </summary>
         public async Task SaveVaultAsync()
         {
             AssertValid();
 
             // Encrypt the internal vault using the provided key hash
+            // This generates a new authentication tag and nounce each time
             var encryptedData = _dataEncryptor.Encrypt(_key!.Value.Hash, _vaultInternal!.Serialize());
 
             // Now pack the encrypted data, alongside the salt so it can be saved to disk
@@ -150,13 +182,17 @@ namespace PasswordManager
             await stream.WriteAsync(packedData);
         }
 
+        /// <summary>
+        ///     This method ensures that the vault is in a valid state. Throws an exception if not.
+        /// </summary>
+        /// <exception cref="VaultException">Why the vault is not in a valid state</exception>
         private void AssertValid()
         {
             if (_vaultInternal == null)
-                throw new ArgumentNullException(nameof(_vaultInternal), "The internal vault cannot be null!");
+                throw new VaultException(VaultExceptionReason.NotValid);
 
             if (_key == null)
-                throw new ArgumentNullException(nameof(_key), "The internal key cannot be null!");
+                throw new VaultException(VaultExceptionReason.MissingKey);
         }
 
         public void Dispose()
@@ -168,6 +204,8 @@ namespace PasswordManager
             _passwordHasher.Dispose();
             _passwordGenerator.Dispose();
             _cryptoServiceProvider.Dispose();
+            
+            GC.SuppressFinalize(this);
         }
     }
 }

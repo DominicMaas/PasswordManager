@@ -4,18 +4,15 @@ using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace PasswordManager.Tests
 {
     public class IntegrationTests : IDisposable
     {
-        private readonly ITestOutputHelper _outputHelper;
         private readonly RNGCryptoServiceProvider _cryptoServiceProvider;
 
-        public IntegrationTests(ITestOutputHelper outputHelper)
+        public IntegrationTests()
         {
-            _outputHelper = outputHelper;
             _cryptoServiceProvider = new RNGCryptoServiceProvider();
         }
 
@@ -123,7 +120,7 @@ namespace PasswordManager.Tests
             var bytes = vault.Serialize();
             var vaultFromJson = VaultType.Deserialize(bytes);
 
-            Assert.Equal(vault.Passwords["demo-password"], vaultFromJson.Passwords["demo-password"]);
+            Assert.Equal(vault.Passwords["demo-password"], vaultFromJson!.Passwords["demo-password"]);
         }
 
         [Fact]
