@@ -2,6 +2,7 @@ using PasswordManager.Common;
 using PasswordManager.Types;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -257,11 +258,23 @@ namespace PasswordManager.Tests
         }
 
         [Fact]
-        public async Task TestInvalidFileLocations()
+        public async Task TestInvalidFileLocations1()
         {
-            await Assert.ThrowsAsync<VaultException>(async () => await Vault.CreateVaultAsync("A:\\what\\yyear\\is\\this\\??\\test.vault", "Pa$$w0rd9"));
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                await Assert.ThrowsAsync<VaultException>(async () => await Vault.CreateVaultAsync("A:\\what\\yyear\\is\\this\\??\\test.vault", "Pa$$w0rd9"));
+            }
+        }
+        
+        [Fact]
+        public async Task TestInvalidFileLocations2()
+        {
             await Assert.ThrowsAsync<VaultException>(async () => await Vault.CreateVaultAsync("testing/test.vault", "Pa$$w0rd9"));
-
+        }
+        
+        [Fact]
+        public async Task TestInvalidFileLocations3()
+        {
             await Assert.ThrowsAsync<VaultException>(async () => await Vault.OpenVaultAsync("idontexist.vault", "Pa$$w0rd9"));
         }
 
