@@ -265,13 +265,13 @@ namespace PasswordManager.Tests
                 await Assert.ThrowsAsync<VaultException>(async () => await Vault.CreateVaultAsync("A:\\what\\yyear\\is\\this\\??\\test.vault", "Pa$$w0rd9"));
             }
         }
-        
+
         [Fact]
         public async Task TestInvalidFileLocations2()
         {
             await Assert.ThrowsAsync<VaultException>(async () => await Vault.CreateVaultAsync("testing/test.vault", "Pa$$w0rd9"));
         }
-        
+
         [Fact]
         public async Task TestInvalidFileLocations3()
         {

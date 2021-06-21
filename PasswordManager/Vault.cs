@@ -261,7 +261,6 @@ namespace PasswordManager
 
         public void AssertValidFilePath(string filePath)
         {
-
         }
 
         public void Dispose()
