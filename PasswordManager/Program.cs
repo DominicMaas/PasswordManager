@@ -21,6 +21,7 @@ namespace PasswordManager
         private void Run()
         {
             var result = WelcomeState();
+            _passwordGenerator.Dispose();
             Environment.Exit(result ? 0 : -1);
         }
 

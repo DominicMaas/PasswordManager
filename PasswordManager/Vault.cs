@@ -50,6 +50,8 @@ namespace PasswordManager
 
         private Vault(string filePath)
         {
+            AssertValidFilePath(filePath);
+
             // Use the same RNG Crypto service provider for all modules
             _cryptoServiceProvider = new RNGCryptoServiceProvider();
             _passwordGenerator = new PasswordGenerator(_cryptoServiceProvider);
@@ -81,20 +83,39 @@ namespace PasswordManager
 
         private async Task OpenVaultInternalAsync(string password)
         {
-            // Read and unpack the file
-            var rawFileContents = await File.ReadAllBytesAsync(_filePath);
-            var (salt, rawData) = DataPacker.UnpackData(rawFileContents);
+            try
+            {
+                // Ensure vault exists
+                if (!File.Exists(_filePath))
+                    throw new VaultException(VaultExceptionReason.NoVault);
 
-            // Hash the provided password with the vault salt
-            _key = _passwordHasher.HashPassword(password, salt, Constants.KeySize);
+                // Read and unpack the file
+                var rawFileContents = await File.ReadAllBytesAsync(_filePath);
+                var (salt, rawData) = DataPacker.UnpackData(rawFileContents);
 
-            // Using this key, attempt to decrypt the vault
-            var decryptedData = _dataEncryptor.Decrypt(_key.Value.Hash, rawData);
+                // Hash the provided password with the vault salt
+                _key = _passwordHasher.HashPassword(password, salt, Constants.KeySize);
 
-            // We now have an internal vault
-            _vaultInternal = VaultType.Deserialize(decryptedData);
-            if (_vaultInternal == null)
-                throw new Exception("Vault was null after deserialize");
+                // Using this key, attempt to decrypt the vault
+                var decryptedData = _dataEncryptor.Decrypt(_key.Value.Hash, rawData);
+
+                // We now have an internal vault
+                _vaultInternal = VaultType.Deserialize(decryptedData);
+            }
+            catch (DirectoryNotFoundException dnfex)
+            {
+                throw new VaultException(VaultExceptionReason.InvalidVaultPath, dnfex);
+            }
+            catch (IOException ioex)
+            {
+                throw new VaultException(VaultExceptionReason.IOError, ioex);
+            }
+            catch (CryptographicException ex)
+            {
+                throw new VaultException(VaultExceptionReason.InvaidMasterPassword, ex);
+            }
+
+            AssertValid();
         }
 
         /// <summary>
@@ -127,9 +148,9 @@ namespace PasswordManager
             {
                 randomPassword = _passwordGenerator.GeneratePassword(randomPasswordLength);
             }
-            catch (ArgumentException)
+            catch (ArgumentException ex)
             {
-                throw new VaultException(VaultExceptionReason.InvalidPassword);
+                throw new VaultException(VaultExceptionReason.InvalidPassword, ex);
             }
 
             CreatePassword(identifier, randomPassword);
@@ -192,8 +213,19 @@ namespace PasswordManager
             var packedData = DataPacker.PackData(_key.Value.Salt, encryptedData);
 
             // Now write to file
-            await using var stream = File.Open(_filePath, FileMode.Create, FileAccess.Write);
-            await stream.WriteAsync(packedData);
+            try
+            {
+                await using var stream = File.Open(_filePath, FileMode.Create, FileAccess.Write);
+                await stream.WriteAsync(packedData);
+            }
+            catch (DirectoryNotFoundException dnfex)
+            {
+                throw new VaultException(VaultExceptionReason.InvalidVaultPath, dnfex);
+            }
+            catch (IOException ioex)
+            {
+                throw new VaultException(VaultExceptionReason.IOError, ioex);
+            }
         }
 
         /// <summary>
@@ -227,15 +259,20 @@ namespace PasswordManager
                 throw new VaultException(VaultExceptionReason.InvalidPassword);
         }
 
+        public void AssertValidFilePath(string filePath)
+        {
+
+        }
+
         public void Dispose()
         {
             _vaultInternal = null;
             _key = null;
 
-            _dataEncryptor.Dispose();
-            _passwordHasher.Dispose();
-            _passwordGenerator.Dispose();
-            _cryptoServiceProvider.Dispose();
+            _dataEncryptor?.Dispose();
+            _passwordHasher?.Dispose();
+            _passwordGenerator?.Dispose();
+            _cryptoServiceProvider?.Dispose();
 
             GC.SuppressFinalize(this);
         }

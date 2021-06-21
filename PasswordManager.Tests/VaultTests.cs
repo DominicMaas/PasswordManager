@@ -1,4 +1,6 @@
+using PasswordManager.Common;
 using PasswordManager.Types;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
@@ -28,7 +30,7 @@ namespace PasswordManager.Tests
         [Fact]
         public async Task TestGeneralFlow()
         {
-            var myVault =  await Vault.CreateVaultAsync("vault_test_2.vault", "Pa$$w0rd");
+            var myVault = await Vault.CreateVaultAsync("vault_test_2.vault", "Pa$$w0rd");
             myVault.CreatePassword("youtube", "Pa$$w0rd12345");
 
             Assert.Throws<VaultException>(() => myVault.GetPassword("invalid-id"));
@@ -110,7 +112,7 @@ namespace PasswordManager.Tests
         [Fact]
         public async Task TestInternalVaultKeyTampering()
         {
-            var myVault = await Vault.CreateVaultAsync("vault_test_3.vault", "Pa$$w0rd");
+            var myVault = await Vault.CreateVaultAsync("vault_test_4.vault", "Pa$$w0rd");
 
             // Bad reflection!
             var _key = myVault.GetType().GetField("_key", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
@@ -121,6 +123,163 @@ namespace PasswordManager.Tests
             await Assert.ThrowsAsync<VaultException>(async () => await myVault.SaveVaultAsync());
 
             myVault.Dispose();
+        }
+
+        [Fact]
+        public async Task TestVaultInvalidPassword()
+        {
+            {
+                var myVault = await Vault.CreateVaultAsync("vault_test_5.vault", "Pa$$w0rd");
+                myVault.CreateRandomPassword("twitter", 32);
+                myVault.CreateRandomPassword("youtube", 32);
+                myVault.CreateRandomPassword("github", 32);
+                await myVault.SaveVaultAsync();
+                myVault.Dispose();
+            }
+
+            await Assert.ThrowsAsync<VaultException>(async () => await Vault.OpenVaultAsync("vault_test_5.vault", "NotTheSamePassword"));
+        }
+
+        [Fact]
+        public async Task TestVaultCipherTamper()
+        {
+            {
+                var myVault = await Vault.CreateVaultAsync("vault_test_6.vault", "Pa$$w0rd6");
+                myVault.CreateRandomPassword("twitter", 32);
+                myVault.CreateRandomPassword("youtube", 32);
+                myVault.CreateRandomPassword("github", 32);
+                await myVault.SaveVaultAsync();
+                myVault.Dispose();
+            }
+
+            {
+                var rawFileContents = await File.ReadAllBytesAsync("vault_test_6.vault");
+                var (salt, rawData) = DataPacker.UnpackData(rawFileContents);
+
+                rawData.Data[31] = 0xDA;
+                rawData.Data[32] = 0xEB;
+                rawData.Data[33] = 0xFC;
+
+                var packedData = DataPacker.PackData(salt, rawData);
+                await File.WriteAllBytesAsync("vault_test_6.vault", packedData);
+            }
+
+            {
+                await Assert.ThrowsAsync<VaultException>(async () => await Vault.OpenVaultAsync("vault_test_6.vault", "Pa$$w0rd6"));
+            }
+        }
+
+        [Fact]
+        public async Task TestVaultSaltTamper()
+        {
+            {
+                var myVault = await Vault.CreateVaultAsync("vault_test_7.vault", "Pa$$w0rd7");
+                myVault.CreateRandomPassword("twitter", 32);
+                myVault.CreateRandomPassword("youtube", 32);
+                myVault.CreateRandomPassword("github", 32);
+                await myVault.SaveVaultAsync();
+                myVault.Dispose();
+            }
+
+            {
+                var rawFileContents = await File.ReadAllBytesAsync("vault_test_7.vault");
+                var (salt, rawData) = DataPacker.UnpackData(rawFileContents);
+
+                salt[0] = 0xDA;
+                salt[1] = 0xEB;
+                salt[2] = 0xFC;
+
+                var packedData = DataPacker.PackData(salt, rawData);
+                await File.WriteAllBytesAsync("vault_test_7.vault", packedData);
+            }
+
+            {
+                await Assert.ThrowsAsync<VaultException>(async () => await Vault.OpenVaultAsync("vault_test_7.vault", "Pa$$w0rd7"));
+            }
+        }
+
+        [Fact]
+        public async Task TestVaultNounceTamper()
+        {
+            {
+                var myVault = await Vault.CreateVaultAsync("vault_test_8.vault", "Pa$$w0rd8");
+                myVault.CreateRandomPassword("twitter", 32);
+                myVault.CreateRandomPassword("youtube", 32);
+                myVault.CreateRandomPassword("github", 32);
+                await myVault.SaveVaultAsync();
+                myVault.Dispose();
+            }
+
+            {
+                var rawFileContents = await File.ReadAllBytesAsync("vault_test_8.vault");
+                var (salt, rawData) = DataPacker.UnpackData(rawFileContents);
+
+                rawData.Nounce[0] = 0xDA;
+                rawData.Nounce[1] = 0xEB;
+                rawData.Nounce[2] = 0xFC;
+
+                var packedData = DataPacker.PackData(salt, rawData);
+                await File.WriteAllBytesAsync("vault_test_8.vault", packedData);
+            }
+
+            {
+                await Assert.ThrowsAsync<VaultException>(async () => await Vault.OpenVaultAsync("vault_test_8.vault", "Pa$$w0rd8"));
+            }
+        }
+
+        [Fact]
+        public async Task TestVaultAuthTagTamper()
+        {
+            {
+                var myVault = await Vault.CreateVaultAsync("vault_test_9.vault", "Pa$$w0rd9");
+                myVault.CreateRandomPassword("twitter", 32);
+                myVault.CreateRandomPassword("youtube", 32);
+                myVault.CreateRandomPassword("github", 32);
+                await myVault.SaveVaultAsync();
+                myVault.Dispose();
+            }
+
+            {
+                var rawFileContents = await File.ReadAllBytesAsync("vault_test_9.vault");
+                var (salt, rawData) = DataPacker.UnpackData(rawFileContents);
+
+                rawData.Tag[0] = 0xDA;
+                rawData.Tag[1] = 0xEB;
+                rawData.Tag[2] = 0xFC;
+
+                var packedData = DataPacker.PackData(salt, rawData);
+                await File.WriteAllBytesAsync("vault_test_9.vault", packedData);
+            }
+
+            {
+                await Assert.ThrowsAsync<VaultException>(async () => await Vault.OpenVaultAsync("vault_test_9.vault", "Pa$$w0rd9"));
+            }
+        }
+
+        [Fact]
+        public async Task TestInvalidFileLocations()
+        {
+            await Assert.ThrowsAsync<VaultException>(async () => await Vault.CreateVaultAsync("A:\\what\\yyear\\is\\this\\??\\test.vault", "Pa$$w0rd9"));
+            await Assert.ThrowsAsync<VaultException>(async () => await Vault.CreateVaultAsync("testing/test.vault", "Pa$$w0rd9"));
+
+            await Assert.ThrowsAsync<VaultException>(async () => await Vault.OpenVaultAsync("idontexist.vault", "Pa$$w0rd9"));
+        }
+
+        [Fact]
+        public async Task TestVaultOpenAndSave()
+        {
+            var myVault = await Vault.CreateVaultAsync("vault_test_10.vault", "Pa$$w0rd10");
+            myVault.CreateRandomPassword("twitter", 32);
+            myVault.CreateRandomPassword("youtube", 32);
+            myVault.CreateRandomPassword("github", 32);
+
+            var rawFileContents = File.Open("vault_test_10.vault", FileMode.OpenOrCreate);
+
+            await Assert.ThrowsAsync<VaultException>(async () => await myVault.SaveVaultAsync());
+
+            rawFileContents.Close();
+
+            await myVault.SaveVaultAsync();
         }
     }
 }

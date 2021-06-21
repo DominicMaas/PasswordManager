@@ -7,7 +7,7 @@ namespace PasswordManager.Types
     {
         public VaultExceptionReason Reason { get; }
 
-        public VaultException(VaultExceptionReason reason) : base(MessageFromReason(reason))
+        public VaultException(VaultExceptionReason reason, Exception? innerException = null) : base(MessageFromReason(reason), innerException)
         {
             Reason = reason;
         }
@@ -21,7 +21,11 @@ namespace PasswordManager.Types
                 VaultExceptionReason.IdentifierNotExist => "Cannot find a password within this vault with the supplied identifier.",
                 VaultExceptionReason.InvalidIdentifier => "The supplied identifier is invalid, please try again. The identifier must be in-between 1 and 255 characters",
                 VaultExceptionReason.InvalidPassword => $"The supplied password is invalid, please try again. The password must be in-between {PasswordGenerator.MinimumPossiblePasswordLength} and {PasswordGenerator.MaximumPossiblePasswordLength} characters long",
-                _ => "An unknown error has occured"
+                VaultExceptionReason.InvaidMasterPassword => "The master password that you have entered is incorrect or the vault has been tampered with",
+                VaultExceptionReason.InvalidVaultPath => "The supplied vault location is invalid. Please make sure the path exists and try again",
+                VaultExceptionReason.NoVault => "Could not find a vault at the supplied file location",
+                VaultExceptionReason.IOError => "An unknown IO error has occurred",
+                _ => "An unknown error has occurred"
             };
         }
     }
@@ -34,5 +38,9 @@ namespace PasswordManager.Types
         IdentifierNotExist,
         InvalidIdentifier,
         InvalidPassword,
+        InvaidMasterPassword,
+        InvalidVaultPath,
+        NoVault,
+        IOError
     }
 }
