@@ -24,7 +24,7 @@ namespace PasswordManager.Types
             };
         }
     }
-    
+
     public enum VaultExceptionReason
     {
         NotValid,

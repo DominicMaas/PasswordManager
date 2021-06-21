@@ -20,7 +20,7 @@ namespace PasswordManager
 
         // The internal vault
         private VaultType? _vaultInternal;
-        
+
         // The key (hash) and salt and used to encrypt and decrypt the vault
         private PasswordHasher.HashedResult? _key;
 
@@ -118,7 +118,7 @@ namespace PasswordManager
         public void CreateRandomPassword(string identifier, int randomPasswordLength)
         {
             AssertValid();
-            
+
             if (string.IsNullOrEmpty(identifier))
                 throw new VaultException(VaultExceptionReason.InvalidIdentifier);
 
@@ -132,13 +132,13 @@ namespace PasswordManager
 
             if (string.IsNullOrEmpty(identifier))
                 throw new VaultException(VaultExceptionReason.InvalidIdentifier);
-            
+
             if (string.IsNullOrEmpty(password))
                 throw new VaultException(VaultExceptionReason.InvalidPassword);
 
             if (_vaultInternal!.Passwords.ContainsKey(identifier))
                 throw new VaultException(VaultExceptionReason.IdentifierAlreadyExists);
-            
+
             _vaultInternal!.Passwords.Add(identifier, password);
         }
 
@@ -152,7 +152,7 @@ namespace PasswordManager
         public string GetPassword(string identifier)
         {
             AssertValid();
-            
+
             if (string.IsNullOrEmpty(identifier))
                 throw new VaultException(VaultExceptionReason.InvalidIdentifier);
 
@@ -204,7 +204,7 @@ namespace PasswordManager
             _passwordHasher.Dispose();
             _passwordGenerator.Dispose();
             _cryptoServiceProvider.Dispose();
-            
+
             GC.SuppressFinalize(this);
         }
     }
