@@ -25,7 +25,7 @@ namespace PasswordManager
         private PasswordHasher.HashedResult? _key;
 
         // Where the vault is located
-        private readonly string _filePath;
+        public string FilePath { get; }
 
         /// <summary>
         ///     Creates a new vault at the specified file location. Encrypts the vault
@@ -50,15 +50,13 @@ namespace PasswordManager
 
         private Vault(string filePath)
         {
-            AssertValidFilePath(filePath);
-
             // Use the same RNG Crypto service provider for all modules
             _cryptoServiceProvider = new RNGCryptoServiceProvider();
             _passwordGenerator = new PasswordGenerator(_cryptoServiceProvider);
             _passwordHasher = new PasswordHasher(_cryptoServiceProvider);
             _dataEncryptor = new DataEncryptor(_cryptoServiceProvider);
 
-            _filePath = filePath;
+            FilePath = filePath;
         }
 
         /// <summary>
@@ -86,11 +84,11 @@ namespace PasswordManager
             try
             {
                 // Ensure vault exists
-                if (!File.Exists(_filePath))
+                if (!File.Exists(FilePath))
                     throw new VaultException(VaultExceptionReason.NoVault);
 
                 // Read and unpack the file
-                var rawFileContents = await File.ReadAllBytesAsync(_filePath);
+                var rawFileContents = await File.ReadAllBytesAsync(FilePath);
                 var (salt, rawData) = DataPacker.UnpackData(rawFileContents);
 
                 // Hash the provided password with the vault salt
@@ -215,7 +213,7 @@ namespace PasswordManager
             // Now write to file
             try
             {
-                await using var stream = File.Open(_filePath, FileMode.Create, FileAccess.Write);
+                await using var stream = File.Open(FilePath, FileMode.Create, FileAccess.Write);
                 await stream.WriteAsync(packedData);
             }
             catch (DirectoryNotFoundException dnfex)
@@ -259,19 +257,15 @@ namespace PasswordManager
                 throw new VaultException(VaultExceptionReason.InvalidPassword);
         }
 
-        public void AssertValidFilePath(string filePath)
-        {
-        }
-
         public void Dispose()
         {
             _vaultInternal = null;
             _key = null;
 
-            _dataEncryptor?.Dispose();
-            _passwordHasher?.Dispose();
-            _passwordGenerator?.Dispose();
-            _cryptoServiceProvider?.Dispose();
+            _dataEncryptor.Dispose();
+            _passwordHasher.Dispose();
+            _passwordGenerator.Dispose();
+            _cryptoServiceProvider.Dispose();
 
             GC.SuppressFinalize(this);
         }
