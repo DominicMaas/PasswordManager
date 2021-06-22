@@ -54,7 +54,7 @@ namespace PasswordManager
             var filePath = AskUserForInput("Please enter the name/path of the vault you wish to open:");
             var password = AskUserForPassword("Please enter your master password:");
 
-            // Attempt to open the vault (TODO: Deal with null values here, the vault also deals with them though)
+            // Attempt to open the vault (TODO: Deal with null values here, but the vault also deals with them though so not super important)
             Vault? v = null;
             if (!await HandleVaultException(async () => { v = await Vault.OpenVaultAsync(filePath, password); }))
                 return await OpenVaultState();
