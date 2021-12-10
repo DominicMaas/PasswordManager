@@ -2,20 +2,9 @@ using System.Security.Cryptography;
 
 namespace PasswordManager.Common;
 
-public class DataEncryptor : IDisposable
+public static class DataEncryptor
 {
-    // Cryptographically secure random number generation
-    private readonly RNGCryptoServiceProvider _cryptoServiceProvider;
-
-    /// <summary>
-    ///     Create a new instance of 'DataEncryptor'
-    /// </summary>
-    public DataEncryptor(RNGCryptoServiceProvider? cryptoServiceProvider = null)
-    {
-        _cryptoServiceProvider = cryptoServiceProvider ?? new RNGCryptoServiceProvider();
-    }
-
-    public EncryptedData Encrypt(byte[] key, byte[] data)
+    public static EncryptedData Encrypt(byte[] key, byte[] data)
     {
         // Use AES in GCM mode as per
         // https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html#cipher-modes
@@ -23,7 +12,7 @@ public class DataEncryptor : IDisposable
 
         // Generate the nounce (maximum possible size)
         var nounce = new byte[Constants.NounceSize];
-        _cryptoServiceProvider.GetBytes(nounce);
+        RandomNumberGenerator.Fill(nounce);
 
         var encryptedData = new byte[data.Length];
         var tag = new byte[Constants.TagSize]; // use large tag sizes!
@@ -37,7 +26,7 @@ public class DataEncryptor : IDisposable
         };
     }
 
-    public byte[] Decrypt(byte[] key, EncryptedData data)
+    public static byte[] Decrypt(byte[] key, EncryptedData data)
     {
         // Use AES in GCM mode as per
         // https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html#cipher-modes
@@ -48,13 +37,7 @@ public class DataEncryptor : IDisposable
 
         return plainText;
     }
-
-    public void Dispose()
-    {
-        _cryptoServiceProvider.Dispose();
-        GC.SuppressFinalize(this);
-    }
-
+    
     public struct EncryptedData
     {
         public byte[] Data;

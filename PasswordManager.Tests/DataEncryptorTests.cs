@@ -4,27 +4,18 @@ using Xunit;
 
 namespace PasswordManager.Tests;
 
-public class DataEncryptorTests : IDisposable
+public class DataEncryptorTests
 {
-    // Cryptographically secure random number generation
-    private readonly RNGCryptoServiceProvider _cryptoServiceProvider;
-
-    public DataEncryptorTests()
-    {
-        _cryptoServiceProvider = new RNGCryptoServiceProvider();
-    }
-
     [Fact]
     public void TestEncrypt()
     {
         // Generate a random 256 bit key
         var key = new byte[256 / 8];
-        _cryptoServiceProvider.GetBytes(key);
+        RandomNumberGenerator.Fill(key);
 
         var data = new byte[] { 0x00, 0x08, 0x00, 0x00, 0x08, 0x03, 0x08, 0x03, 0x08, 0x03 };
 
-        using var encryptor = new DataEncryptor();
-        var encryptedData = encryptor.Encrypt(key, data);
+        var encryptedData = DataEncryptor.Encrypt(key, data);
 
         Assert.Equal(data.Length, encryptedData.Data.Length);
         Assert.Equal(AesGcm.TagByteSizes.MaxSize, encryptedData.Tag.Length);
@@ -38,34 +29,27 @@ public class DataEncryptorTests : IDisposable
     {
         // Generate a random 256 bit key
         var key = new byte[256 / 8];
-        _cryptoServiceProvider.GetBytes(key);
+        RandomNumberGenerator.Fill(key);
 
         var key2 = new byte[256 / 8];
-        _cryptoServiceProvider.GetBytes(key2);
+        RandomNumberGenerator.Fill(key2);
 
         var data = new byte[] { 0x00, 0x08, 0x00, 0x00, 0x08, 0x03, 0x08, 0x03, 0x08, 0x03 };
 
-        using var encryptor = new DataEncryptor();
-        var encryptedData = encryptor.Encrypt(key, data);
+        var encryptedData = DataEncryptor.Encrypt(key, data);
 
         // Decrypt with incorrect key
         Assert.Throws<CryptographicException>(() =>
-            encryptor.Decrypt(key2,
+            DataEncryptor.Decrypt(key2,
                 new DataEncryptor.EncryptedData
                     { Data = encryptedData.Data, Nounce = encryptedData.Nounce, Tag = encryptedData.Tag }));
 
         // Decrypt with correct key
-        var decryptedData = encryptor.Decrypt(key,
+        var decryptedData = DataEncryptor.Decrypt(key,
             new DataEncryptor.EncryptedData
                 { Data = encryptedData.Data, Nounce = encryptedData.Nounce, Tag = encryptedData.Tag });
 
         // Ensure data is the same
         Assert.Equal(data, decryptedData);
-    }
-
-    public void Dispose()
-    {
-        _cryptoServiceProvider.Dispose();
-        GC.SuppressFinalize(this);
     }
 }

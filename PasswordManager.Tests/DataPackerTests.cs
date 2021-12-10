@@ -4,16 +4,8 @@ using Xunit;
 
 namespace PasswordManager.Tests;
 
-public class DataPackerTests : IDisposable
+public class DataPackerTests
 {
-    // Cryptographically secure random number generation
-    private readonly RNGCryptoServiceProvider _cryptoServiceProvider;
-
-    public DataPackerTests()
-    {
-        _cryptoServiceProvider = new RNGCryptoServiceProvider();
-    }
-
     [Fact]
     public void TestPack()
     {
@@ -23,10 +15,10 @@ public class DataPackerTests : IDisposable
         var nonce = new byte[Constants.NounceSize];
         var tag = new byte[Constants.TagSize];
 
-        _cryptoServiceProvider.GetBytes(cipherText);
-        _cryptoServiceProvider.GetBytes(salt);
-        _cryptoServiceProvider.GetBytes(nonce);
-        _cryptoServiceProvider.GetBytes(tag);
+        RandomNumberGenerator.Fill(cipherText);
+        RandomNumberGenerator.Fill(salt);
+        RandomNumberGenerator.Fill(nonce);
+        RandomNumberGenerator.Fill(tag);
 
         var result = DataPacker.PackData(salt, new DataEncryptor.EncryptedData
         {
@@ -47,10 +39,10 @@ public class DataPackerTests : IDisposable
         var nonce = new byte[Constants.NounceSize];
         var tag = new byte[Constants.TagSize];
 
-        _cryptoServiceProvider.GetBytes(cipherText);
-        _cryptoServiceProvider.GetBytes(salt);
-        _cryptoServiceProvider.GetBytes(nonce);
-        _cryptoServiceProvider.GetBytes(tag);
+        RandomNumberGenerator.Fill(cipherText);
+        RandomNumberGenerator.Fill(salt);
+        RandomNumberGenerator.Fill(nonce);
+        RandomNumberGenerator.Fill(tag);
 
         var result = DataPacker.PackData(salt, new DataEncryptor.EncryptedData
         {
@@ -72,11 +64,5 @@ public class DataPackerTests : IDisposable
         Assert.Equal(cipherText, unpackedData.Data);
         Assert.Equal(nonce, unpackedData.Nounce);
         Assert.Equal(tag, unpackedData.Tag);
-    }
-
-    public void Dispose()
-    {
-        _cryptoServiceProvider.Dispose();
-        GC.SuppressFinalize(this);
     }
 }

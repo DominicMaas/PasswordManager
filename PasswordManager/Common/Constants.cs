@@ -4,13 +4,15 @@ namespace PasswordManager.Common;
 
 public static class Constants
 {
-    public static int KeySize = 256 / 8;
+    public const int KeySize = 256 / 8;
 
-    public static int SaltSize => 32;
-    public static int TagSize => AesGcm.TagByteSizes.MaxSize; // 16
-    public static int NounceSize => AesGcm.NonceByteSizes.MaxSize; // 12
+    public const int SaltSize = 32;
+    
+    public static readonly int TagSize = AesGcm.TagByteSizes.MaxSize; // 16
+    
+    public static readonly int NounceSize = AesGcm.NonceByteSizes.MaxSize; // 12
 
-    public static int FixedPackedSize => SaltSize + TagSize + NounceSize;
+    public static readonly int FixedPackedSize = SaltSize + TagSize + NounceSize;
 
     public static Range GetCipherTextRange(int cipherTextLength)
     {

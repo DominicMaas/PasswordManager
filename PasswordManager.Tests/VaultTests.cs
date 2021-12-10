@@ -32,13 +32,13 @@ public class VaultTests
         myVault.CreatePassword("youtube", "Pa$$w0rd12345");
 
         Assert.Throws<VaultException>(() => myVault.GetPassword("invalid-id"));
-        Assert.Throws<VaultException>(() => myVault.GetPassword(null));
+        Assert.Throws<VaultException>(() => myVault.GetPassword(null!));
 
         Assert.Single(myVault.GetPasswordEntries());
 
-        Assert.Throws<VaultException>(() => myVault.CreatePassword(null, null));
-        Assert.Throws<VaultException>(() => myVault.CreatePassword("valid-id", null));
-        Assert.Throws<VaultException>(() => myVault.CreatePassword(null, "valid-password"));
+        Assert.Throws<VaultException>(() => myVault.CreatePassword(null!, null!));
+        Assert.Throws<VaultException>(() => myVault.CreatePassword("valid-id", null!));
+        Assert.Throws<VaultException>(() => myVault.CreatePassword(null!, "valid-password"));
 
         Assert.Throws<VaultException>(() => myVault.CreatePassword("youtube", "my-new-password"));
         myVault.CreatePassword("youtube-2", "my-new-password");

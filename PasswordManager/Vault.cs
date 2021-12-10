@@ -6,13 +6,6 @@ namespace PasswordManager;
 
 public class Vault : IDisposable
 {
-    // Cryptographically secure services
-    private readonly RNGCryptoServiceProvider _cryptoServiceProvider;
-
-    private readonly PasswordGenerator _passwordGenerator;
-    private readonly PasswordHasher _passwordHasher;
-    private readonly DataEncryptor _dataEncryptor;
-
     // The internal vault
     private VaultType? _vaultInternal;
 
@@ -45,12 +38,6 @@ public class Vault : IDisposable
 
     private Vault(string filePath)
     {
-        // Use the same RNG Crypto service provider for all modules
-        _cryptoServiceProvider = new RNGCryptoServiceProvider();
-        _passwordGenerator = new PasswordGenerator(_cryptoServiceProvider);
-        _passwordHasher = new PasswordHasher(_cryptoServiceProvider);
-        _dataEncryptor = new DataEncryptor(_cryptoServiceProvider);
-
         FilePath = filePath;
     }
 
@@ -65,7 +52,7 @@ public class Vault : IDisposable
         _vaultInternal = new VaultType { Passwords = new Dictionary<string, string>() };
 
         // Hash the provided password and store it so vault saving works
-        _key = _passwordHasher.HashPassword(password, Constants.KeySize);
+        _key = PasswordHasher.HashPassword(password, Constants.KeySize);
 
         // Attempt to save this vault (this also ensures the file location is correct)
         await SaveVaultAsync();
@@ -87,10 +74,10 @@ public class Vault : IDisposable
             var (salt, rawData) = DataPacker.UnpackData(rawFileContents);
 
             // Hash the provided password with the vault salt
-            _key = _passwordHasher.HashPassword(password, salt, Constants.KeySize);
+            _key = PasswordHasher.HashPassword(password, salt, Constants.KeySize);
 
             // Using this key, attempt to decrypt the vault
-            var decryptedData = _dataEncryptor.Decrypt(_key.Value.Hash, rawData);
+            var decryptedData = DataEncryptor.Decrypt(_key.Value.Hash, rawData);
 
             // We now have an internal vault
             _vaultInternal = VaultType.Deserialize(decryptedData);
@@ -133,13 +120,13 @@ public class Vault : IDisposable
     {
         AssertValid();
 
-        AssertIndentifierValid(identifier);
+        AssertIdentifierValid(identifier);
 
         string randomPassword;
 
         try
         {
-            randomPassword = _passwordGenerator.GeneratePassword(randomPasswordLength);
+            randomPassword = PasswordGenerator.GeneratePassword(randomPasswordLength);
         }
         catch (ArgumentException ex)
         {
@@ -152,7 +139,7 @@ public class Vault : IDisposable
     public void CreatePassword(string identifier, string password)
     {
         AssertValid();
-        AssertIndentifierValid(identifier);
+        AssertIdentifierValid(identifier);
         AssertPasswordValid(password);
 
         if (_vaultInternal!.Passwords.ContainsKey(identifier))
@@ -164,7 +151,7 @@ public class Vault : IDisposable
     public void DeletePassword(string identifier)
     {
         AssertValid();
-        AssertIndentifierValid(identifier);
+        AssertIdentifierValid(identifier);
 
         if (!_vaultInternal!.Passwords.ContainsKey(identifier))
             throw new VaultException(VaultExceptionReason.IdentifierNotExist);
@@ -182,7 +169,7 @@ public class Vault : IDisposable
     public string GetPassword(string identifier)
     {
         AssertValid();
-        AssertIndentifierValid(identifier);
+        AssertIdentifierValid(identifier);
 
         var result = _vaultInternal!.Passwords.TryGetValue(identifier, out var password);
         if (!result || string.IsNullOrEmpty(password))
@@ -200,7 +187,7 @@ public class Vault : IDisposable
 
         // Encrypt the internal vault using the provided key hash
         // This generates a new authentication tag and nounce each time
-        var encryptedData = _dataEncryptor.Encrypt(_key!.Value.Hash, _vaultInternal!.Serialize());
+        var encryptedData = DataEncryptor.Encrypt(_key!.Value.Hash, _vaultInternal!.Serialize());
 
         // Now pack the encrypted data, alongside the salt so it can be saved to disk
         var packedData = DataPacker.PackData(_key.Value.Salt, encryptedData);
@@ -234,7 +221,7 @@ public class Vault : IDisposable
             throw new VaultException(VaultExceptionReason.MissingKey);
     }
 
-    private void AssertIndentifierValid(string identifier)
+    private static void AssertIdentifierValid(string identifier)
     {
         if (string.IsNullOrEmpty(identifier))
             throw new VaultException(VaultExceptionReason.InvalidIdentifier);
@@ -243,7 +230,7 @@ public class Vault : IDisposable
             throw new VaultException(VaultExceptionReason.InvalidIdentifier);
     }
 
-    private void AssertPasswordValid(string password)
+    private static void AssertPasswordValid(string password)
     {
         if (string.IsNullOrEmpty(password))
             throw new VaultException(VaultExceptionReason.InvalidPassword);
@@ -256,11 +243,6 @@ public class Vault : IDisposable
     {
         _vaultInternal = null;
         _key = null;
-
-        _dataEncryptor.Dispose();
-        _passwordHasher.Dispose();
-        _passwordGenerator.Dispose();
-        _cryptoServiceProvider.Dispose();
 
         GC.SuppressFinalize(this);
     }

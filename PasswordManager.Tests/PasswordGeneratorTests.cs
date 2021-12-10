@@ -16,22 +16,19 @@ public class PasswordGeneratorTests
     [Fact]
     public void LengthTooSmall()
     {
-        using var passwordGenerator = new PasswordGenerator();
-        Assert.Throws<ArgumentException>(() => passwordGenerator.GeneratePassword(5));
+        Assert.Throws<ArgumentException>(() => PasswordGenerator.GeneratePassword(5));
     }
 
     [Fact]
     public void LengthTooLong()
     {
-        using var passwordGenerator = new PasswordGenerator();
-        Assert.Throws<ArgumentException>(() => passwordGenerator.GeneratePassword(100));
+        Assert.Throws<ArgumentException>(() => PasswordGenerator.GeneratePassword(100));
     }
 
     [Fact]
     public void SingleGeneration()
     {
-        using var passwordGenerator = new PasswordGenerator();
-        passwordGenerator.GeneratePassword(80);
+        PasswordGenerator.GeneratePassword(80);
     }
 
     [Fact]
@@ -40,10 +37,9 @@ public class PasswordGeneratorTests
         // Keep track of counts to see distribution
         var dict = new Dictionary<char, int>();
 
-        using var passwordGenerator = new PasswordGenerator();
         for (var i = 0; i < 5_000_000; i++) // 5 million passwords
         {
-            var pass = passwordGenerator.GeneratePassword(80);
+            var pass = PasswordGenerator.GeneratePassword(80);
             foreach (var c in pass.ToCharArray())
             {
                 if (dict.ContainsKey(c))

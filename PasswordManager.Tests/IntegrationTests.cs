@@ -5,23 +5,14 @@ using Xunit;
 
 namespace PasswordManager.Tests;
 
-public class IntegrationTests : IDisposable
+public class IntegrationTests
 {
-    private readonly RNGCryptoServiceProvider _cryptoServiceProvider;
-
-    public IntegrationTests()
-    {
-        _cryptoServiceProvider = new RNGCryptoServiceProvider();
-    }
-
     [Fact]
     public void TestGenerateAndHash()
     {
-        using var passwordGenerator = new PasswordGenerator();
-        using var passwordHasher = new PasswordHasher();
-
-        var randomPassword = passwordGenerator.GeneratePassword(80);
-        var hashedPassword = passwordHasher.HashPassword(randomPassword, 256);
+        var randomPassword = PasswordGenerator.GeneratePassword(80);
+        var hashedPassword = PasswordHasher.HashPassword(randomPassword, 256);
+        
         Assert.Equal(256, hashedPassword.Hash.Length);
         Assert.Equal(32, hashedPassword.Salt.Length);
     }
@@ -29,16 +20,12 @@ public class IntegrationTests : IDisposable
     [Fact]
     public void TestGenerateAndHashAndEncrypt()
     {
-        using var passwordGenerator = new PasswordGenerator();
-        using var passwordHasher = new PasswordHasher();
-        using var dataEncryptor = new DataEncryptor();
-
         var data = new byte[1_000_000];
-        _cryptoServiceProvider.GetBytes(data);
+        RandomNumberGenerator.Fill(data);
 
-        var randomPassword = passwordGenerator.GeneratePassword(80);
-        var key = passwordHasher.HashPassword(randomPassword, 256 / 8);
-        var encryptedData = dataEncryptor.Encrypt(key.Hash, data);
+        var randomPassword = PasswordGenerator.GeneratePassword(80);
+        var key = PasswordHasher.HashPassword(randomPassword, 256 / 8);
+        var encryptedData = DataEncryptor.Encrypt(key.Hash, data);
 
         Assert.NotEqual(data, encryptedData.Data);
     }
@@ -46,16 +33,12 @@ public class IntegrationTests : IDisposable
     [Fact]
     public void TestGenerateAndHashAndEncryptAndDecrypt()
     {
-        using var passwordGenerator = new PasswordGenerator();
-        using var passwordHasher = new PasswordHasher();
-        using var dataEncryptor = new DataEncryptor();
-
         var data = new byte[1_000_000];
-        _cryptoServiceProvider.GetBytes(data);
+        RandomNumberGenerator.Fill(data);
 
-        var randomPassword = passwordGenerator.GeneratePassword(80);
-        var key = passwordHasher.HashPassword(randomPassword, 256 / 8);
-        var encryptedData = dataEncryptor.Encrypt(key.Hash, data);
+        var randomPassword = PasswordGenerator.GeneratePassword(80);
+        var key = PasswordHasher.HashPassword(randomPassword, 256 / 8);
+        var encryptedData = DataEncryptor.Encrypt(key.Hash, data);
 
         // ------ Stored to file ------ //
         var cipherText = encryptedData.Data;
@@ -64,12 +47,12 @@ public class IntegrationTests : IDisposable
         var tag = encryptedData.Tag;
         // ------ Stored to file ------ //
 
-        var newKey = passwordHasher.HashPassword(randomPassword, salt, 256 / 8); // User re-enters password, use stored salt
+        var newKey = PasswordHasher.HashPassword(randomPassword, salt, 256 / 8); // User re-enters password, use stored salt
 
         Assert.Equal(key.Hash, newKey.Hash);
         Assert.Equal(key.Salt, newKey.Salt);
 
-        var plainText = dataEncryptor.Decrypt(newKey.Hash,
+        var plainText = DataEncryptor.Decrypt(newKey.Hash,
             new DataEncryptor.EncryptedData { Data = cipherText, Nounce = nounce, Tag = tag });
 
         Assert.Equal(data, plainText);
@@ -78,16 +61,12 @@ public class IntegrationTests : IDisposable
     [Fact]
     public void TestGenerateAndHashAndEncryptAndPackAndUnpackAndDecrypt()
     {
-        using var passwordGenerator = new PasswordGenerator();
-        using var passwordHasher = new PasswordHasher();
-        using var dataEncryptor = new DataEncryptor();
-
         var data = new byte[1_000_000];
-        _cryptoServiceProvider.GetBytes(data);
+        RandomNumberGenerator.Fill(data);
 
-        var randomPassword = passwordGenerator.GeneratePassword(80);
-        var key = passwordHasher.HashPassword(randomPassword, 256 / 8);
-        var encryptedData = dataEncryptor.Encrypt(key.Hash, data);
+        var randomPassword = PasswordGenerator.GeneratePassword(80);
+        var key = PasswordHasher.HashPassword(randomPassword, 256 / 8);
+        var encryptedData = DataEncryptor.Encrypt(key.Hash, data);
 
         // ------ Stored to file ------ //
         var packedData = DataPacker.PackData(key.Salt, encryptedData);
@@ -98,12 +77,12 @@ public class IntegrationTests : IDisposable
         var tag = unpackedData.Tag;
         // ------ Stored to file ------ //
 
-        var newKey = passwordHasher.HashPassword(randomPassword, salt, 256 / 8); // User re-enters password, use stored salt
+        var newKey = PasswordHasher.HashPassword(randomPassword, salt, 256 / 8); // User re-enters password, use stored salt
 
         Assert.Equal(key.Hash, newKey.Hash);
         Assert.Equal(key.Salt, newKey.Salt);
 
-        var plainText = dataEncryptor.Decrypt(newKey.Hash,
+        var plainText = DataEncryptor.Decrypt(newKey.Hash,
             new DataEncryptor.EncryptedData { Data = cipherText, Nounce = nounce, Tag = tag });
 
         Assert.Equal(data, plainText);
@@ -112,8 +91,7 @@ public class IntegrationTests : IDisposable
     [Fact]
     public void TestVaultTypeSerializeAndDeserialize()
     {
-        var vault = new VaultType { Passwords = new Dictionary<string, string>() };
-        vault.Passwords.Add("demo-password", "Pa%%w0rd");
+        var vault = new VaultType { Passwords = new Dictionary<string, string> { { "demo-password", "Pa%%w0rd" } } };
 
         var bytes = vault.Serialize();
         var vaultFromJson = VaultType.Deserialize(bytes);
@@ -124,19 +102,18 @@ public class IntegrationTests : IDisposable
     [Fact]
     public void TestGenerateAndHashAndSerializeAndEncryptAndPackAndUnpackAndDecryptAndDeserialize()
     {
-        using var passwordGenerator = new PasswordGenerator();
-        using var passwordHasher = new PasswordHasher();
-        using var dataEncryptor = new DataEncryptor();
+        var vault = new VaultType { Passwords = new Dictionary<string, string>
+            {
+                { "website_1", PasswordGenerator.GeneratePassword(80) },
+                { "website_2", PasswordGenerator.GeneratePassword(80) },
+                { "website_3", PasswordGenerator.GeneratePassword(80) },
+                { "website_4", PasswordGenerator.GeneratePassword(80) }
+            }
+        };
 
-        var vault = new VaultType { Passwords = new Dictionary<string, string>() };
-        vault.Passwords.Add("website_1", passwordGenerator.GeneratePassword(80));
-        vault.Passwords.Add("website_2", passwordGenerator.GeneratePassword(80));
-        vault.Passwords.Add("website_3", passwordGenerator.GeneratePassword(80));
-        vault.Passwords.Add("website_4", passwordGenerator.GeneratePassword(80));
-
-        var randomPassword = passwordGenerator.GeneratePassword(80);
-        var key = passwordHasher.HashPassword(randomPassword, 256 / 8);
-        var encryptedData = dataEncryptor.Encrypt(key.Hash, vault.Serialize());
+        var randomPassword = PasswordGenerator.GeneratePassword(80);
+        var key = PasswordHasher.HashPassword(randomPassword, 256 / 8);
+        var encryptedData = DataEncryptor.Encrypt(key.Hash, vault.Serialize());
 
         // ------ Stored to file ------ //
         var packedData = DataPacker.PackData(key.Salt, encryptedData);
@@ -147,12 +124,12 @@ public class IntegrationTests : IDisposable
         var tag = unpackedData.Tag;
         // ------ Stored to file ------ //
 
-        var newKey = passwordHasher.HashPassword(randomPassword, salt, 256 / 8); // User re-enters password, use stored salt
+        var newKey = PasswordHasher.HashPassword(randomPassword, salt, 256 / 8); // User re-enters password, use stored salt
 
         Assert.Equal(key.Hash, newKey.Hash);
         Assert.Equal(key.Salt, newKey.Salt);
 
-        var plainText = dataEncryptor.Decrypt(newKey.Hash,
+        var plainText = DataEncryptor.Decrypt(newKey.Hash,
             new DataEncryptor.EncryptedData { Data = cipherText, Nounce = nounce, Tag = tag });
 
         var storedVault = VaultType.Deserialize(plainText);
@@ -162,11 +139,5 @@ public class IntegrationTests : IDisposable
         {
             Assert.Equal(pass, storedVault.Passwords[id]);
         }
-    }
-
-    public void Dispose()
-    {
-        _cryptoServiceProvider.Dispose();
-        GC.SuppressFinalize(this);
     }
 }
