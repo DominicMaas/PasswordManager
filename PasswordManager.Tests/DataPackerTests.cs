@@ -1,5 +1,4 @@
 using PasswordManager.Common;
-using System;
 using System.Security.Cryptography;
 using Xunit;
 

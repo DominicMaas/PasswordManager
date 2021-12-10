@@ -1,11 +1,6 @@
 using PasswordManager.Common;
 using PasswordManager.Types;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Security.Cryptography;
-using System.Threading.Tasks;
 
 namespace PasswordManager;
 
@@ -106,11 +101,11 @@ public class Vault : IDisposable
         }
         catch (IOException ioex)
         {
-            throw new VaultException(VaultExceptionReason.IOError, ioex);
+            throw new VaultException(VaultExceptionReason.IoError, ioex);
         }
         catch (CryptographicException ex)
         {
-            throw new VaultException(VaultExceptionReason.InvaidMasterPassword, ex);
+            throw new VaultException(VaultExceptionReason.InvalidMasterPassword, ex);
         }
 
         AssertValid();
@@ -222,7 +217,7 @@ public class Vault : IDisposable
         }
         catch (IOException ioex)
         {
-            throw new VaultException(VaultExceptionReason.IOError, ioex);
+            throw new VaultException(VaultExceptionReason.IoError, ioex);
         }
     }
 

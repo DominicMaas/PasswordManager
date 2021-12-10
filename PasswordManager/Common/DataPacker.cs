@@ -1,5 +1,3 @@
-using System;
-
 namespace PasswordManager.Common;
 
 /// <summary>

@@ -1,10 +1,6 @@
 ﻿using PasswordManager.Common;
 using PasswordManager.Types;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace PasswordManager;
 
@@ -401,7 +397,7 @@ public class Program
         {
             var errorMessage = ex.Message;
 
-            if (ex.Reason == VaultExceptionReason.IOError && ex.InnerException != null)
+            if (ex.Reason == VaultExceptionReason.IoError && ex.InnerException != null)
                 errorMessage += " " + ex.InnerException.Message;
 
             Console.WriteLine(errorMessage);
@@ -423,7 +419,7 @@ public class Program
         {
             var errorMessage = ex.Message;
 
-            if (ex.Reason == VaultExceptionReason.IOError && ex.InnerException != null)
+            if (ex.Reason == VaultExceptionReason.IoError && ex.InnerException != null)
                 errorMessage += " " + ex.InnerException.Message;
 
             Console.WriteLine(errorMessage);

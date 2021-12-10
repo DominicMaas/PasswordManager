@@ -1,9 +1,6 @@
 using PasswordManager.Common;
 using PasswordManager.Types;
-using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace PasswordManager.Tests;
@@ -100,8 +97,8 @@ public class VaultTests
         var myVault = await Vault.CreateVaultAsync("vault_test_3.vault", "Pa$$w0rd");
 
         // Bad reflection!
-        var _vaultInternal = myVault.GetType().GetField("_vaultInternal", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        _vaultInternal.SetValue(myVault, null);
+        var vaultInternal = myVault.GetType().GetField("_vaultInternal", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        vaultInternal!.SetValue(myVault, null);
 
         Assert.Throws<VaultException>(() => myVault.GetPasswordEntries());
 
@@ -116,8 +113,8 @@ public class VaultTests
         var myVault = await Vault.CreateVaultAsync("vault_test_4.vault", "Pa$$w0rd");
 
         // Bad reflection!
-        var _key = myVault.GetType().GetField("_key", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        _key.SetValue(myVault, null);
+        var key = myVault.GetType().GetField("_key", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        key!.SetValue(myVault, null);
 
         Assert.Throws<VaultException>(() => myVault.GetPasswordEntries());
 
